@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document Chatbot</title>
+    <style>
+        /* Add OpenAI-like styling */
+        .chat-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .chat-box { height: 500px; border: 1px solid black; overflow-y: auto; margin-bottom: 20px; }
+        .message { margin: 10px; padding: 15px; border-radius: 8px; }
+        .user-message { background: rgb(239, 236, 236); margin-left: 20%; }
+        .bot-message { background: #203646; margin-right: 20%; }
+        #model-select { margin-bottom: 10px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <select id="model-select">
+            <option value="llama2">Llama 2</option>
+            <option value="gemma">Gemma</option>
+        </select>
+        
+        <input type="file" id="file-input" accept=".pdf,.docx,.csv,.xlsx">
+        
+        <div class="chat-box" id="chat-box"></div>
+        <input type="text" id="user-input" placeholder="Ask something...">
+        <button onclick="sendQuery()">Send</button>
+    </div>
+
+    <script>
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            return response.json();
+        }
+
+        async function sendQuery() {
+            const input = document.getElementById('user-input');
+            const query = input.value;
+            const model = document.getElementById('model-select').value;
+            
+            // Add user message
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML += `<div class="message user-message">${query}</div>`;
+            
+            // Get bot response
+            const response = await fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, model })
+            });
+            
+            const data = await response.json();
+            chatBox.innerHTML += `<div class="message bot-message">${data.response}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Handle file upload
+        document.getElementById('file-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const result = await uploadFile(file);
+            alert(result.message || result.error);
+        });
+    </script>
+</body>
+</html>
